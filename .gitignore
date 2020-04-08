@@ -1,0 +1,5 @@
+./runconfpw
+./*.gpg
+./*.raw
+./*.log
+./*.conf

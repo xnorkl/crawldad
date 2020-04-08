@@ -1,0 +1,6 @@
+graphviz
+pysnmp
+pydot
+pysnmp>=4.2.5
+pyparsing
+netaddr>=0.7.14
