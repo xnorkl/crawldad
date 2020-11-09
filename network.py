@@ -85,12 +85,5 @@ pp.pprint("Nodes: {}\nEdges: {}".format(graph.nodes, graph.edges))
 nx.draw_shell(graph, with_labels=True)
 plt.show()
 
-#graph = graph_network(host)
 
-#print(graph.nodes)
-#print(graph.edges)
-#test = "Device ID: MGH1A-CORE.mongeneral.com\nEntry address(es):\nIP address: 172.26.2.122\nPlatform: cisco WS-C4507R+E,  Capabilities: Switch IGMP\nInterface: TenGigabitEthernet2/0/24,  Port ID (outgoing port):TenGigabitEthernet4/1\nHoldtime : 150 sec\nadvertisement version: 2\nVTP Management Domain: 'MonGen'\nNative VLAN: 666\nDuplex: full\nManagement address(es):\n  IP address: 172.26.2.122\n\n-------------------------\nDevice ID:MGH1-CORE.mongeneral.com\nEntry address(es):\n  IP address: 172.26.2.22\nPlatform: cisco WS-C4507R+E,  Capabilities: Switch IGMP\nInterface: TenGigabitEthernet1/0/24,  Port ID (outgoing port):TenGigabitEthernet3/1\nHoldtime : 150 sec\nadvertisement version: 2\nVTP Management Domain: 'MonGen'\nNative VLAN: 66\nDuplex: full\nManagement address(es):\n  IP address: 172.26.2.12"
-
-
-#print(get_entry(test))
 

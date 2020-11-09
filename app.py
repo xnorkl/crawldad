@@ -1,10 +1,12 @@
 import graph as g
+import netcrawl as nc
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 
-edges = [('a','b'),('a','c'),('d','c'),('c','b')]
-graph = g.gen_graph(edges)
+edges = nc.edges()
+graph = g.net_graph(edges)
+g.plot(graph)
 
 app = dash.Dash()
 app.layout = html.Div([

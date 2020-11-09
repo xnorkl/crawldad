@@ -1,5 +1,6 @@
-./runconfpw
-./*.gpg
-./*.raw
-./*.log
-./*.conf
+**/runconfpw
+**/*.gpg
+**/*.raw
+**/*.log
+**/*.conf
+**/lib/

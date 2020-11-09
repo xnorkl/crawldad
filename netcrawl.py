@@ -12,6 +12,8 @@ from collections import deque
 import pprint as pp
 from abc import ABC, abstractmethod
 import uuid
+from pathlib import Path
+import networkx as nx
 
 logging.basicConfig(filename='./test.log', level=logging.DEBUG)
 logger = logging.getLogger("netmiko")
@@ -56,29 +58,34 @@ class net_map():
     else:
       raise Exception("Expects a list!")
 
-  def rootname(self) -> str:
-    return self.root.hostname()
-
-  def append(self, node) -> None:
+  def append(self, node):
     self.nodes.append(node)
+
+  #TODO: Make this more useful (ie choose attr to display)
+  def map(self):
+    return {self.root.hostname : [n.hostname for n in self.nodes if n]}
+
+  def sequence(self):
+    r = self.root
+    return [(r.hostname,n.hostname) for n in self.nodes if n]
 
 class net_obj(base):
   #TODO: make setters
   
-  def __init__(self, host, plat, ipv4, vlan, netd) -> None:
+  def __init__(self, host, plat, ipv4, vlan, type):
     self._host = host
-    self._type = plat
+    self._plat = plat
     self._ipv4 = ipv4
     self._vlan = vlan
-    self._netd = netd.lower()
+    self._type = type
 
   @property
   def hostname(self):
-    return self._host
+    return self._host.lower()
 
   @property
   def platform(self):
-    return self._type
+    return self._plat
 
   @property
   def address(self):
@@ -90,20 +97,15 @@ class net_obj(base):
 
   @property
   def device(self):
-    return self._netd
+    return self._type.lower()
      
 class default(net_obj):
-
-  def __init__(self, file='monode.conf') -> None:
-    #TODO: use decorator instead of initialising parser here.
+  
+  def __init__(self):
     parser = configparser.ConfigParser()
-    parser.read(file)
-    self.file = file
-    self.__dict__.update(parser.items('DEFAULT'))
-    self.__dict__.pop('file')
-
-  def hostname(self) -> str:
-    return self.__dict__.get('host')
+    parser.read('monode.conf')
+    self._host = parser['DEFAULT']['host']
+    self._plat = parser['DEFAULT']['device_type']
 
 class cdp:
   #TODO: Error checking on Type
@@ -123,9 +125,9 @@ class cdp:
           }
 
       creds = {
-        'username' : 'changeme',
-        'password' : 'changeme',
-        'secret'   : 'changeme'
+        'username' : 'gordont',
+        'password' : 'test123',
+        'secret'   : 'change-mgh'
         }
    
       core = {**dev, **creds}
@@ -137,59 +139,52 @@ class cdp:
       
       # Define regex patterns as groups.
       pattern = [
-          re.search(r"(?P<DEV>(?<=Device ID: ).\w+)", neighbor),
-          re.search(r"(?P<IP>(?<=IP address: ).*)", neighbor),
-          re.search(r"(?P<VLAN>(?<=Native VLAN: ).*)", neighbor),
-          re.search(r"(?P<SWITCH>(?<=Capabilities: )\w+)", neighbor)]
+          re.search(r"(?P<DEV>(?<=Device ID: ).[\w-]+)", neighbor),
+          re.search(r"(?P<IP>(?<=IP address: ).[\d.]+)", neighbor), #TODO: Fix
+          re.search(r"(?P<VLAN>(?<=Native VLAN: ).\d+)", neighbor),
+          re.search(r"(?P<SWITCH>(?<=Capabilities: )[\w-]+)", neighbor)]
      
       host, ip, vlan, type = [re and re.group(1) for re in pattern]
       
-      # TODO: add functionality for other types of devices.
       # Create an object based on the device type.
-      if pattern[:1]: 
-        if type == 'Switch':
-          return net_obj(host, dev.cisco_ios.name, ip, vlan, type)
+      if type:
+        return net_obj(host, dev.cisco_ios.name, ip, vlan, type)
 
     ####End of SubMethods####
-
-    fpath = "{}.raw".format(root.hostname())
-    if not local:
-      handler = connect(n)
-      handler.enable()
-      raw = handler.send_command("sh cdp nei det")
-      handler.disconnect()
-    
+    foldr = Path('./raw/')
+    rfile = '{}.raw'.format(root.hostname)
+    fpath = foldr / rfile
+    if local:
+      try:
+      # Read raw_output file into memory.
+        with open(fpath) as f:
+          raw = f.read()
+      except OSError as e:
+        print(e)
+        return
+    else:
+      try:
+        handler = connect(root)
+        handler.enable()
+        raw = handler.send_command("sh cdp nei det")
+        handler.disconnect()
+      except netmiko.ssh_exception.NetmikoTimeoutException as e:
+        raise(e)
+ 
       #TODO: pull out to sep function.
       if path.exists(fpath):
         remove(fpath)
       with open(fpath, 'w+') as f:
         f.write(raw)
-    else:
-      # Read raw_output file into memory.
-      with open(fpath) as f:
-        raw = f.read()
-    
+  
     # Split raw data into elements of raw text for each device.
     raw_nodes = raw.split("-------------------------")
 
     # Step twice since "sh cdp nei" gives duplicate output.
-    nodes = list()
-    for n in raw_nodes[::step]:
-      # Transform raw text into a net_obj. Remove empty entries.
-      node = as_netobj(n)
-      if node:
-        nodes.append(node)
+    nodes = [as_netobj(n) for n in raw_nodes[::step] if n]
 
-    return nodes
-
-  def adj_map(n):
-    ''' Create an adjency list to use for graph modeling '''
-
-    net = net_map(default(), n)
-    adj = {net.root.hostname() : [node.__dict__ for node in net.nodes]}
-    return adj
-
- 
+    return net_map(root, nodes)
+  
   def adj_matrix(n):
     ''' Take a network map and create and adjacency matrix '''
 
@@ -207,17 +202,28 @@ class cdp:
     for h in n:
       stack.append(h.hostname)
 
-    
-    
-
-
+#TODO: Try Throw 
 #TODO: Create a proces to remove duplicates from network object.
 
 
+def edges():
+  root_net = cdp.neighbors(default(), local=True)
+  edges = root_net.sequence()
+  for node in root_net.nodes:
+    if node:
+      try: 
+        child_net = cdp.neighbors(node, local=True)
+        for tuple in child_net.sequence():
+          edges.append(tuple)
+      except Exception as e:
+        print("{}: {}".format(node.hostname, e))
+        pass
 
-#con = cdp.connect()
-#cdp.write_show_nei(c n)
-n = cdp.neighbors(default(), local=True)
+  return edges
+#G = nx.Graph(edges)
+#print(G.nodes)
 
-#pp.pprint(a)
+
+
+  
 
