@@ -1,6 +1,9 @@
+**/.conf
+**/.log
+**/logging
 **/runconfpw
-**/*.gpg
-**/*.raw
-**/*.log
-**/*.conf
-**/lib/
+test
+netmiko
+**/data/
+**/node/
+**/raw/
