@@ -125,9 +125,9 @@ class cdp:
           }
 
       creds = {
-        'username' : 'gordont',
-        'password' : 'test123',
-        'secret'   : 'change-mgh'
+        'username' : 'changeme',
+        'password' : 'changeme',
+        'secret'   : 'changeme'
         }
    
       core = {**dev, **creds}
