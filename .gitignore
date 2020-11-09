@@ -1,9 +1,9 @@
-**/.conf
-**/.log
-**/logging
-**/runconfpw
+*.conf
+*.log
+logging
+runconfpw
 test
 netmiko
-**/data/
-**/node/
-**/raw/
+data/
+node/
+raw/

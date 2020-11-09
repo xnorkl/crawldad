@@ -10,12 +10,13 @@ import matplotlib.pyplot as plt
 logging.basicConfig(filename='./test.log', level=logging.DEBUG)
 logger = logging.getLogger("netmiko")
 
-cred = ['gordont','test123','change-mgh']
-host = ['cisco_ios','1st_nt_mdf_sw01.mhs.org']
+cred = ['changeme','changeme','changeme']
+host = ['cisco_ios','changeme']
 
 def cdp_neighbors(device: str, host: str, cred: list) -> str:
   ''' generate cdp connection handler and return dict '''
   #TODO: make cred a Type
+  #TODO: use dotenv
 
   switch = {
       'device_type' : device,
